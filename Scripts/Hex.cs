@@ -8,7 +8,8 @@ public enum HexSpriteType : byte { Normal, Fixed, Available, Frame }
 public struct HexPosition
 {
     public byte ringIndex, ringPosition;
-    public static readonly HexPosition zer0 = new HexPosition(0, 0);
+    public static readonly HexPosition zer0 = new HexPosition(0, 0), unexist = new HexPosition(255, 255);
+    public HexPosition Copy { get { return new HexPosition(ringIndex, ringPosition); } }
 
     public HexPosition(byte index, byte position)
     {
@@ -31,11 +32,391 @@ public struct HexPosition
     {
         if (ringIndex == 0) return ringPosition;
         else {
-            int x = ringIndex + 1;
-            int a = ringPosition / x;
-            if (ringPosition % x == 0) return 0;
-            else return (byte)(ringPosition - a * x);
+            int segmentsCount = ringIndex + 1;
+            int a = ringPosition / segmentsCount;
+            if (ringPosition % segmentsCount == 0) return 0;
+            else return (byte)(ringPosition - a * segmentsCount);
         }
+    }
+    public int InsectorToOnring(int ring, int sector, int pos)
+    {
+        return sector * (ring + 1) + pos;
+    }
+    public HexPosition GetNextPosition()
+    {
+        var sectors = ringIndex + 1;
+        var inpos = DefineInsectorPosition();
+        if (inpos == sectors - 1) return new HexPosition(ringIndex + 1, DefineSector() * (ringIndex + 2));
+        else return new HexPosition(ringIndex, ringPosition + 1);
+    }
+    public HexPosition GetNeighbour(byte direction)
+    {
+        byte sector = DefineSector();
+        var p = DefineInsectorPosition();
+        int ring = 0, position = 0;
+        switch (direction)
+        {
+            case 0: // up
+                {
+                    switch (sector)
+                    {
+                        case 0:
+                            ring = ringIndex + 1;
+                            position = p;
+                            break;
+                        case 1:
+                            {
+                                if (p == 0)
+                                {
+                                    ring = ringIndex + 1;
+                                    position = InsectorToOnring(ring, 0, ring);
+                                }
+                                else
+                                {
+                                    ring = ringIndex;
+                                    position = ringPosition - 1;
+                                }
+                                break;
+                            }
+                        case 2:
+                            {
+                                if (p == 0)
+                                {
+                                    ring = ringIndex;
+                                    position = ringPosition - 1;
+                                }
+                                else
+                                {
+                                    ring = ringIndex - 1;
+                                    position = InsectorToOnring(ringIndex - 1, sector, p - 1);                                    
+                                }
+                                break;
+                            }
+                        case 3:
+                            {
+                                ring = ringIndex - 1;
+                                if (p == ringIndex)
+                                {                                    
+                                    position = InsectorToOnring(ringIndex - 1, sector + 1, 0);
+                                }
+                                else
+                                {
+                                    position = InsectorToOnring(ringIndex - 1, 3, p);
+                                }
+                                break;
+                            }
+                        case 4:
+                            ring = ringIndex;
+                            position = ringPosition + 1;
+                            break;
+                        case 5:
+                            ring = ringIndex + 1;
+                            position = InsectorToOnring(ringIndex + 1, sector, p + 1);
+                            break;
+                    }
+                    break;
+                }
+            case 1: //up-right
+                {
+                    switch (sector)
+                    {
+                        case 0:
+                            ring = ringIndex + 1;
+                            position = p + 1;
+                            break;
+                        case 1:
+                            ring = ringIndex + 1;
+                            position = InsectorToOnring(ringIndex + 1, sector, p);
+                            break;
+                        case 2:
+                            if (p == 0)
+                            {
+                                ring = ringIndex + 1;
+                                position = InsectorToOnring(ringIndex + 1, sector-1, ringIndex + 1);
+                            }
+                            else
+                            {
+                                ring = ringIndex;
+                                position = ringPosition - 1;
+                            }
+                            break;
+                        case 3:
+                            if (p == 0)
+                            {
+                                ring = ringIndex;
+                                position = ringPosition - 1;
+                            }
+                            else {
+                                ring = ringIndex - 1;
+                                position = InsectorToOnring(ring, sector, p - 1);
+                            }
+                            break;
+                        case 4:
+                            {
+                                ring = ringIndex - 1;
+                                if (p == ringIndex) position = InsectorToOnring(ring, sector + 1, 0);
+                                else position = InsectorToOnring(ring, sector, p);
+                                break;
+                            }
+                        case 5:
+                            {
+                                ring = ringIndex;
+                                if (p == ringIndex) position = 0;
+                                else position = ringPosition + 1;
+                                break;
+                            }
+                    }
+                    break;
+                }
+            case 2: // right - down
+                {
+                    switch (sector)
+                    {
+                        case 0:
+                            {
+                                ring = ringIndex;
+                                position = ringPosition + 1;
+                                break;
+                            }
+                        case 1:
+                            {
+                                ring = ringIndex + 1;
+                                position = InsectorToOnring(ring, sector, p + 1);
+                                break;
+                            }
+                        case 2:
+                            {
+                                ring = ringIndex + 1;
+                                position = InsectorToOnring(ring, sector, p);
+                                break;
+                            }
+                        case 3:
+                            {
+                                if (p == 0)
+                                {
+                                    ring = ringIndex + 1;
+                                    position = InsectorToOnring(ring, sector - 1, ring);
+                                }
+                                else
+                                {
+                                    ring = ringIndex;
+                                    position = ringPosition - 1;
+                                }
+                                break;
+                            }
+                        case 4:
+                            {
+                                if (p == 0)
+                                {
+                                    ring = ringIndex;
+                                    position = ringPosition - 1;
+                                }
+                                else
+                                {
+                                    ring = ringIndex - 1;
+                                    position = InsectorToOnring(ring, sector, p - 1);
+                                }
+                                break;
+                            }
+                        case 5:
+                            {
+                                ring = ringIndex - 1;
+                                if (p == ringIndex)
+                                {
+                                    position = 0;
+                                }
+                                else
+                                {
+                                    position = InsectorToOnring(ring, sector, p);
+                                }
+                                break;
+                            }
+                    }
+                    break;
+                }
+            case 3: // down 
+                {
+                    switch (sector)
+                    {
+                        case 0:
+                            {
+                                ring = ringIndex - 1;
+                                if (p == ringIndex) position = InsectorToOnring(ring, 1, 0);
+                                else position = InsectorToOnring(ring, 0, p);
+                                break;
+                            }
+                        case 1:
+                            {
+                                ring = ringIndex;
+                                position = ringPosition + 1;
+                                break;
+                            }
+                        case 2:
+                            {
+                                ring = ringIndex + 1;
+                                position = InsectorToOnring(ring, sector, p + 1);
+                                break;
+                            }
+                        case 3:
+                            {
+                                ring = ringIndex + 1;
+                                position = InsectorToOnring(ring, sector, p);
+                                break;
+                            }
+                        case 4:
+                            {
+                                if (p == 0)
+                                {
+                                    ring = ringIndex + 1;
+                                    position = InsectorToOnring(ring, sector - 1, ring);
+                                }
+                                else
+                                {
+                                    ring = ringIndex;
+                                    position = ringPosition - 1;
+                                }
+                                break;
+                            }
+                        case 5:
+                            {
+                                if (p == 0)
+                                {
+                                    ring = ringIndex;
+                                    position = ringPosition - 1;
+                                }
+                                else
+                                {
+                                    ring = ringIndex - 1;
+                                    position = InsectorToOnring(ring, sector, p - 1);
+                                }
+                                break;
+                            }
+                    }
+                    break;
+                }
+            case 4: // left - down
+                {
+                    switch (sector)
+                    {
+                        case 0:
+                            {
+                                if (p == 0)
+                                {
+                                    ring = ringIndex;
+                                    position = (ringIndex + 1) * 6 - 1;
+                                }
+                                else
+                                {
+                                    ring = ringIndex - 1;
+                                    position = ringPosition - 1;
+                                }
+                                break;
+                            }
+                        case 1:
+                            {
+                                ring = ringIndex - 1;
+                                if (p == ringIndex) position = InsectorToOnring(ring, sector + 1, 0);
+                                else position = InsectorToOnring(ring, sector, p);
+                                break;
+                            }
+                        case 2:
+                            {
+                                ring = ringIndex;
+                                position = ringPosition + 1;
+                                break;
+                            }
+                        case 3:
+                            {
+                                ring = ringIndex + 1;
+                                position = InsectorToOnring(ring, sector, p + 1);
+                                break;
+                            }
+                        case 4:
+                            {
+                                ring = ringIndex + 1;
+                                position = InsectorToOnring(ring, sector, p);
+                                break;
+                            }
+                        case 5:
+                            {
+                                if (p == 0)
+                                {
+                                    ring = ringIndex + 1;
+                                    position = InsectorToOnring(ring, sector - 1, ring);
+                                }
+                                else
+                                {
+                                    ring = ringIndex;
+                                    position = ringPosition - 1;
+                                }
+                                break;
+                            }
+                    }
+                    break;
+                }
+            case 5: // left - up
+                {
+                    switch (sector)
+                    {
+                        case 0:
+                            {
+                                if (p == 0)
+                                {
+                                    ring = ringIndex + 1;
+                                    position = InsectorToOnring(ring, 5, ring);
+                                }
+                                else
+                                {
+                                    ring = ringIndex;
+                                    position = ringPosition - 1;
+                                }
+                                break;
+                            }
+                        case 1:
+                            {
+                                if (p == 0)
+                                {
+                                    ring = ringIndex;
+                                    position = ringPosition - 1;
+                                }
+                                else
+                                {
+                                    ring = ringIndex - 1;
+                                    position = InsectorToOnring(ring, sector, p - 1);
+                                }
+                                break;
+                            }
+                        case 2:
+                            {
+                                ring = ringIndex - 1;
+                                if (p == ringIndex) position = InsectorToOnring(ring, sector + 1, 0);
+                                else position = InsectorToOnring(ring, sector, p);
+                                break;
+                            }
+                        case 3:
+                            {
+                                ring = ringIndex;
+                                position = ringPosition + 1;
+                                break;
+                            }
+                        case 4:
+                            {
+                                ring = ringIndex + 1;
+                                position = InsectorToOnring(ring, sector, p + 1);
+                                break;
+                            }
+                        case 5:
+                            {
+                                ring = ringIndex + 1;
+                                position = InsectorToOnring(ring, sector, p);
+                                break;
+                            }
+                    }
+                    break;
+                }
+        }
+        if (ring < 0 || position < 0) return unexist;
+        else  return new HexPosition(ring, position);
     }
 }
 
@@ -73,6 +454,7 @@ public class Hex
     public Vector3 position { get { return image?.transform.position ?? Vector3.zero; } }
     public HexPosition hexPosition { get; private set; }
     private Image image;
+    private float colorValue = 1;
 
     private static readonly Color redColor = Color.Lerp(Color.red, Color.white, 0.7f),
         blueColor = Color.Lerp(Color.blue, Color.white, 0.7f),
@@ -126,6 +508,12 @@ public class Hex
         image.color = GetColorByColorcode(colorcode);
     }
 
+    public (ColorCode, float) GetColouredValue()
+    {
+        if (colorcode == ColorCode.White || spriteType != HexSpriteType.Normal) return (ColorCode.White, 0f);
+        else return (colorcode, colorValue);
+    }
+
     public void SetColor(ColorCode cc)
     {
         colorcode = cc;
@@ -140,5 +528,15 @@ public class Hex
     {
         spriteType = hst;
         if (hst == HexSpriteType.Frame || hst == HexSpriteType.Available) colorcode = ColorCode.White;
+    }
+    public void SetButtonActivity(bool x)
+    {
+        image.GetComponent<Button>().enabled = x;
+    }
+    public void ChangeText(string s)
+    {
+        var t = image.transform.GetChild(0);;
+        t.GetComponent<Text>().text = s;
+        t.gameObject.SetActive(true);
     }
 }
